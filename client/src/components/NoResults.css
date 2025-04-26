@@ -1,0 +1,11 @@
+.no-results {
+    text-align: center;
+    padding: 2rem;
+    color: #555;
+}
+
+.no-results-image {
+    width: 200px;
+    height: auto;
+    margin-bottom: 1rem;
+}
