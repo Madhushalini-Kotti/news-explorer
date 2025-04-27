@@ -1,8 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './SearchBar.css';
 
-function SearchBar({ onSearch }) {
-    const [query, setQuery] = useState('');
+function SearchBar({ onSearch, value, onInputChange }) {
+    const [query, setQuery] = useState(value || ''); // Initialize with value from App.js
+
+    useEffect(() => {
+        setQuery(value); // Update local state when value prop changes
+    }, [value]);
 
     const handleSearch = () => {
         if (query.trim() === '') {
@@ -18,13 +22,20 @@ function SearchBar({ onSearch }) {
         }
     };
 
+    const handleChange = (e) => {
+        setQuery(e.target.value);
+        if (onInputChange) {
+            onInputChange(e); // Communicate the input change back to App.js
+        }
+    };
+
     return (
         <div className="search-section">
             <input
                 type="text"
                 className="search-input"
                 value={query}
-                onChange={(e) => setQuery(e.target.value)}
+                onChange={handleChange}
                 onKeyPress={handleKeyPress}
                 placeholder="Search latest news..."
             />

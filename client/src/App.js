@@ -9,6 +9,8 @@ import LoadingSpinner from './components/LoadingSpinner';
 import { FaGithub } from 'react-icons/fa';
 import './App.css';
 
+const categories = ["All", "Technology", "Science", "Business", "Health", "Sports"];
+
 function App() {
   const [news, setNews] = useState([]);
   const [query, setQuery] = useState('all');
@@ -16,9 +18,12 @@ function App() {
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(true);
   const [noResults, setNoResults] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [searchInput, setSearchInput] = useState('');
 
   const debouncedFetchNews = useCallback(
     debounce(async (searchTerm, pageNum) => {
+      setLoading(true);
       const fetchedNews = await fetchNews(searchTerm, pageNum);
 
       if (fetchedNews.length === 0 && pageNum === 1) {
@@ -27,25 +32,43 @@ function App() {
         setNoResults(false);
       }
 
-      setLoading(false);
-
       if (pageNum === 1) {
-        setNews(fetchedNews);
+        setNews(fetchedNews); // Reset news on page 1
       } else {
         setNews((prevNews) => [...prevNews, ...fetchedNews]);
       }
 
       setHasMore(fetchedNews.length > 0);
+      setLoading(false);
     }, 800),
     []
   );
 
   const handleSearch = (searchTerm) => {
-    setQuery(searchTerm);
+    if (searchTerm.trim() === '') {
+      setQuery('all');
+      setSelectedCategory('All');
+    } else {
+      setQuery(searchTerm);
+      setSelectedCategory('All');
+    }
     setPage(1);
-    setNews([]);
+    setNews([]); // Clear existing news
     setNoResults(false);
-    setLoading(true);
+    debouncedFetchNews(searchTerm, 1); // Trigger search
+  };
+
+  const handleCategoryClick = (category) => {
+    if (category === selectedCategory) {
+      return; // Don't fetch again if the same category is clicked
+    }
+    setSelectedCategory(category);
+    setSearchInput(''); // Clear the search bar
+    setQuery(category === "All" ? 'all' : category);
+    setPage(1);
+    setNews([]); // Clear existing news
+    setNoResults(false);
+    debouncedFetchNews(category === "All" ? 'all' : category, 1);
   };
 
   const fetchNextPage = () => {
@@ -53,27 +76,17 @@ function App() {
   };
 
   const handleLogoClick = () => {
-    // When logo is clicked, reset the search to its default value (e.g., 'all')
+    setSelectedCategory('All');
     setQuery('all');
     setPage(1);
     setNews([]);
     setNoResults(false);
-    setLoading(true);
-
-    // Fetch news immediately after reset
+    setSearchInput(''); // Clear the search input
     debouncedFetchNews('all', 1);
   };
 
   useEffect(() => {
     debouncedFetchNews(query, page);
-  }, [query, page, debouncedFetchNews]);
-
-  useEffect(() => {
-    if (query.trim() !== '') {
-      debouncedFetchNews(query, page);
-    } else {
-      debouncedFetchNews(query, page);
-    }
   }, [query, page, debouncedFetchNews]);
 
   return (
@@ -83,7 +96,11 @@ function App() {
           <h1>📰 News Explorer</h1>
         </div>
         <div className="header-center">
-          <SearchBar onSearch={handleSearch} small />
+          <SearchBar
+            onSearch={handleSearch}
+            value={searchInput}
+            onInputChange={(e) => setSearchInput(e.target.value)}
+          />
         </div>
         <div className="header-right">
           <a
@@ -91,10 +108,24 @@ function App() {
             target="_blank"
             rel="noopener noreferrer"
           >
-            <FaGithub size={30} color="white" />
+            <FaGithub size={30} color="black" />
           </a>
         </div>
       </header>
+
+      <div className="header-categories">
+        <ul>
+          {categories.map((category) => (
+            <li
+              key={category}
+              className={selectedCategory === category ? 'active' : ''}
+              onClick={() => handleCategoryClick(category)}
+            >
+              {category}
+            </li>
+          ))}
+        </ul>
+      </div>
 
       <InfiniteScroll
         dataLength={news.length}
