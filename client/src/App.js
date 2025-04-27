@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { motion } from 'framer-motion';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import debounce from 'lodash/debounce';
 import fetchNews from './api';
 import NewsCard from './components/NewsCard';
@@ -7,12 +7,16 @@ import SearchBar from './components/SearchBar';
 import InfiniteScroll from 'react-infinite-scroll-component';
 import NoResults from './components/NoResults';
 import LoadingSpinner from './components/LoadingSpinner';
-import { FaGithub } from 'react-icons/fa';
+import { motion } from 'framer-motion';
+import Modal from './components/Modal';
+import LoginPage from './pages/LoginPage';
+import SignupPage from './pages/SignupPage';
+import LogoutIcon from '@mui/icons-material/Logout';
 import './App.css';
 
 const categories = ["All", "Technology", "Science", "Business", "Health", "Sports"];
 
-function App() {
+function MainApp() {
   const [news, setNews] = useState([]);
   const [query, setQuery] = useState('all');
   const [page, setPage] = useState(1);
@@ -21,6 +25,9 @@ function App() {
   const [noResults, setNoResults] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [searchInput, setSearchInput] = useState('');
+  const [showLogin, setShowLogin] = useState(false);
+  const [showSignup, setShowSignup] = useState(false);
+  const [user, setUser] = useState(null); // New - for logged-in user
 
   const debouncedFetchNews = useCallback(
     debounce(async (searchTerm, pageNum) => {
@@ -57,7 +64,6 @@ function App() {
     setNews([]);
     setNoResults(false);
 
-    // 🆕 Scroll to top after a new search
     window.scrollTo({
       top: 0,
       behavior: 'smooth'
@@ -91,6 +97,11 @@ function App() {
     debouncedFetchNews('all', 1);
   };
 
+  const handleLogout = () => {
+    setUser(null);
+    handleLogoClick(); // Reset everything when logging out
+  };
+
   useEffect(() => {
     debouncedFetchNews(query, page);
   }, [query, page, debouncedFetchNews]);
@@ -114,13 +125,21 @@ function App() {
           />
         </div>
         <div className="header-right">
-          <a
-            href="https://github.com/Madhushalini-Kotti/news-explorer"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <FaGithub size={30} color="black" />
-          </a>
+          {user ? (
+            <div className="user-section">
+              <span className="user-greeting">Hi, {user.name}</span>
+              <LogoutIcon
+                onClick={handleLogout}
+                style={{ cursor: 'pointer', fontSize: '28px', color: '#333' }}
+                titleAccess="Logout"
+              />
+            </div>
+          ) : (
+            <>
+              <button className="auth-button" onClick={() => setShowLogin(true)}>Login</button>
+              <button className="auth-button" onClick={() => setShowSignup(true)}>Signup</button>
+            </>
+          )}
         </div>
       </header>
 
@@ -141,6 +160,20 @@ function App() {
         </ul>
       </div>
 
+      {/* Modals */}
+      {showLogin && (
+        <Modal onClose={() => setShowLogin(false)}>
+          <LoginPage onLoginSuccess={(loggedUser) => { setUser(loggedUser); setShowLogin(false); }} />
+        </Modal>
+      )}
+
+      {showSignup && (
+        <Modal onClose={() => setShowSignup(false)}>
+          <SignupPage onSignupSuccess={(newUser) => { setUser(newUser); setShowSignup(false); }} />
+        </Modal>
+      )}
+
+      {/* News */}
       <InfiniteScroll
         dataLength={news.length}
         next={fetchNextPage}
@@ -160,6 +193,19 @@ function App() {
         </section>
       </InfiniteScroll>
     </motion.div>
+  );
+}
+
+function App() {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<MainApp />} />
+        <Route path="/login" element={<Navigate to="/" replace />} />
+        <Route path="/signup" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Router>
   );
 }
 

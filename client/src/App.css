@@ -213,3 +213,33 @@ h1 {
     gap: 10px;
   }
 }
+
+
+
+.auth-button {
+  margin: 0 5px;
+  padding: 8px 14px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  font-size: 14px;
+}
+
+.auth-button:hover {
+  background-color: #0056b3;
+}
+
+.user-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user-greeting {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+}
