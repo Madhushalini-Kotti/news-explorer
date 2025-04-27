@@ -186,9 +186,9 @@ function MainApp() {
           ) : noResults ? (
             <NoResults />
           ) : (
-            news.map((article, index) => (
-              <NewsCard key={index} article={article} />
-            ))
+                news.map((article, index) => (
+                  <NewsCard key={index} article={article} user={user} />
+              )) 
           )}
         </section>
       </InfiniteScroll>

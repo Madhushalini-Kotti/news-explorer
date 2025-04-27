@@ -13,8 +13,9 @@ function LoginPage({ onLoginSuccess }) {
         try {
             const response = await axios.post('http://localhost:5000/api/login', { email });
             if (response.data.success) {
-                const username = email.split('@')[0]; // Create a name from email
-                onLoginSuccess({ name: username });
+                const user = response.data.user;
+                localStorage.setItem('news-explorer-user', JSON.stringify(user)); // Save
+                onLoginSuccess(user); // Update parent state
             } else {
                 setError(response.data.message || 'Login failed. Try again.');
             }
