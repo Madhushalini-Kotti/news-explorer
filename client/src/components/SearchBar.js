@@ -1,18 +1,20 @@
+// src/components/SearchBar.js
 import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import './SearchBar.css';
 
 function SearchBar({ onSearch, value, onInputChange }) {
-    const [query, setQuery] = useState(value || ''); // Initialize with value from App.js
+    const [query, setQuery] = useState(value || '');
 
     useEffect(() => {
-        setQuery(value); // Update local state when value prop changes
+        setQuery(value);
     }, [value]);
 
     const handleSearch = () => {
         if (query.trim() === '') {
-            onSearch('');  // Trigger page refresh when the search bar is empty
+            onSearch('');
         } else {
-            onSearch(query);  // Normal search
+            onSearch(query);
         }
     };
 
@@ -25,23 +27,31 @@ function SearchBar({ onSearch, value, onInputChange }) {
     const handleChange = (e) => {
         setQuery(e.target.value);
         if (onInputChange) {
-            onInputChange(e); // Communicate the input change back to App.js
+            onInputChange(e);
         }
     };
 
     return (
         <div className="search-section">
-            <input
+            <motion.input
                 type="text"
                 className="search-input"
                 value={query}
                 onChange={handleChange}
                 onKeyPress={handleKeyPress}
                 placeholder="Search latest news..."
+                whileFocus={{ scale: 1.02 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 20 }}
             />
-            <button className="search-button" onClick={handleSearch}>
+            <motion.button
+                className="search-button"
+                onClick={handleSearch}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+            >
                 Search
-            </button>
+            </motion.button>
         </div>
     );
 }

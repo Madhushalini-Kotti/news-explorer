@@ -1,10 +1,17 @@
-// components/NewsCard.js
+// src/components/NewsCard.js
 import React from 'react';
-import './NewsCard.css'; // We'll create this for card-specific styles
+import { motion } from 'framer-motion';
+import './NewsCard.css';
 
 function NewsCard({ article }) {
     return (
-        <div className="news-card">
+        <motion.div
+            className="news-card"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            whileHover={{ scale: 1.05 }}
+        >
             {article.urlToImage && (
                 <img src={article.urlToImage} alt="news" className="news-image" />
             )}
@@ -20,7 +27,7 @@ function NewsCard({ article }) {
                     Read more
                 </a>
             </div>
-        </div>
+        </motion.div>
     );
 }
 

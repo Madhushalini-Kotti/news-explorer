@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { motion } from 'framer-motion';
 import debounce from 'lodash/debounce';
 import fetchNews from './api';
 import NewsCard from './components/NewsCard';
@@ -33,7 +34,7 @@ function App() {
       }
 
       if (pageNum === 1) {
-        setNews(fetchedNews); // Reset news on page 1
+        setNews(fetchedNews);
       } else {
         setNews((prevNews) => [...prevNews, ...fetchedNews]);
       }
@@ -53,20 +54,25 @@ function App() {
       setSelectedCategory('All');
     }
     setPage(1);
-    setNews([]); // Clear existing news
+    setNews([]);
     setNoResults(false);
-    debouncedFetchNews(searchTerm, 1); // Trigger search
+
+    // 🆕 Scroll to top after a new search
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+
+    debouncedFetchNews(searchTerm, 1);
   };
 
   const handleCategoryClick = (category) => {
-    if (category === selectedCategory) {
-      return; // Don't fetch again if the same category is clicked
-    }
+    if (category === selectedCategory) return;
     setSelectedCategory(category);
-    setSearchInput(''); // Clear the search bar
+    setSearchInput('');
     setQuery(category === "All" ? 'all' : category);
     setPage(1);
-    setNews([]); // Clear existing news
+    setNews([]);
     setNoResults(false);
     debouncedFetchNews(category === "All" ? 'all' : category, 1);
   };
@@ -81,7 +87,7 @@ function App() {
     setPage(1);
     setNews([]);
     setNoResults(false);
-    setSearchInput(''); // Clear the search input
+    setSearchInput('');
     debouncedFetchNews('all', 1);
   };
 
@@ -90,7 +96,12 @@ function App() {
   }, [query, page, debouncedFetchNews]);
 
   return (
-    <div className="app">
+    <motion.div
+      className="app"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.8 }}
+    >
       <header className="header">
         <div className="header-left" onClick={handleLogoClick}>
           <h1>📰 News Explorer</h1>
@@ -116,13 +127,16 @@ function App() {
       <div className="header-categories">
         <ul>
           {categories.map((category) => (
-            <li
+            <motion.li
               key={category}
               className={selectedCategory === category ? 'active' : ''}
               onClick={() => handleCategoryClick(category)}
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
+              transition={{ type: "spring", stiffness: 300 }}
             >
               {category}
-            </li>
+            </motion.li>
           ))}
         </ul>
       </div>
@@ -145,7 +159,7 @@ function App() {
           )}
         </section>
       </InfiniteScroll>
-    </div>
+    </motion.div>
   );
 }
 
