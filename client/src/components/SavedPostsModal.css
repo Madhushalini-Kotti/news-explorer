@@ -1,0 +1,22 @@
+.saved-posts-modal {
+    padding: 20px;
+    text-align: center;
+}
+
+.saved-posts-modal h2 {
+    margin-bottom: 20px;
+    color: #ff4081;
+    /* Pinkish to match heart ❤️ */
+}
+
+.saved-posts-modal ul {
+    list-style: none;
+    padding: 0;
+}
+
+.saved-posts-modal li {
+    background-color: #f7f7f7;
+    margin: 8px 0;
+    padding: 10px;
+    border-radius: 8px;
+}

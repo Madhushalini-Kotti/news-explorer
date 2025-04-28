@@ -1,0 +1,13 @@
+.no-saved-posts {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 20px;
+    color: #555;
+    text-align: center;
+}
+
+.no-saved-posts-image {
+    width: 40%;
+    margin-bottom: 20px;
+}

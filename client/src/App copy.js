@@ -7,7 +7,6 @@ import SearchBar from './components/SearchBar';
 import InfiniteScroll from 'react-infinite-scroll-component';
 import NoResults from './components/NoResults';
 import LoadingSpinner from './components/LoadingSpinner';
-import NoSavedPosts from './components/NoSavedPosts';
 import { motion } from 'framer-motion';
 import Modal from './components/Modal';
 import LoginPage from './pages/LoginPage';
@@ -30,9 +29,6 @@ function MainApp() {
   const [showLogin, setShowLogin] = useState(false);
   const [showSignup, setShowSignup] = useState(false);
   const [showSavedPosts, setShowSavedPosts] = useState(false);
-  const [savedPosts, setSavedPosts] = useState([]);
-  const [savingPostsLoading, setSavingPostsLoading] = useState(false);
-
 
 
   const [user, setUser] = useState(() => {
@@ -67,9 +63,6 @@ function MainApp() {
   );
 
   const handleSearch = (searchTerm) => {
-    if (showSavedPosts) {
-      setShowSavedPosts(false);
-    }
     if (searchTerm.trim() === '') {
       setQuery('all');
       setSelectedCategory('All');
@@ -84,11 +77,7 @@ function MainApp() {
     debouncedFetchNews(searchTerm, 1);
   };
 
-
   const handleCategoryClick = (category) => {
-    if (showSavedPosts) {
-      setShowSavedPosts(false);
-    }
     if (category === selectedCategory) return;
     setSelectedCategory(category);
     setSearchInput('');
@@ -99,34 +88,11 @@ function MainApp() {
     debouncedFetchNews(category === "All" ? 'all' : category, 1);
   };
 
-
-  const refreshSavedPosts = async () => {
-    try {
-      const response = await fetch(`http://localhost:5000/api/getsavedposts?userId=${user.id}`);
-      const data = await response.json();
-      if (data.success) {
-        setSavedPosts(data.savedPosts);
-        setShowSavedPosts(true);
-        setSelectedCategory('');
-      } else {
-        console.error('Failed to fetch saved posts:', data.message);
-      }
-    } catch (error) {
-      console.error('Error fetching saved posts:', error);
-    }
-  };
-
-
-
-
   const fetchNextPage = () => {
     setPage((prevPage) => prevPage + 1);
   };
 
   const handleLogoClick = () => {
-    if (showSavedPosts) {
-      setShowSavedPosts(false);
-    }
     setSelectedCategory('All');
     setQuery('all');
     setPage(1);
@@ -135,7 +101,6 @@ function MainApp() {
     setSearchInput('');
     debouncedFetchNews('all', 1);
   };
-
 
   const handleLogout = () => {
     setUser(null);
@@ -180,6 +145,7 @@ function MainApp() {
               <span className="user-greeting">Hi, {user.name}</span>
               <LogoutIcon
                 onClick={handleLogout}
+                style={{ cursor: 'pointer', fontSize: '28px', color: '#333' }}
                 titleAccess="Logout"
               />
             </div>
@@ -197,7 +163,7 @@ function MainApp() {
           {categories.map((category) => (
             <motion.li
               key={category}
-              className={selectedCategory === category && !showSavedPosts ? 'active' : ''}
+              className={selectedCategory === category ? 'active' : ''}
               onClick={() => handleCategoryClick(category)}
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.95 }}
@@ -209,17 +175,13 @@ function MainApp() {
           {/* 👉 Saved Posts Button */}
           {user && (
             <motion.li
-              className={`saved-posts-button ${showSavedPosts ? 'active' : ''}`}
-              onClick={refreshSavedPosts}
+              className="saved-posts-button"
+              onClick={() => setShowSavedPosts(true)}
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.95 }}
               transition={{ type: "spring", stiffness: 300 }}
             >
-              {savingPostsLoading ? (
-                <span className="spinner"></span> // 👈 Tiny spinning loader!
-              ) : (
-                '❤️ Saved Posts'
-              )}
+              ❤️ Saved Posts
             </motion.li>
           )}
         </ul>
@@ -248,48 +210,35 @@ function MainApp() {
         </Modal>
       )}
 
+      {showSavedPosts && user && (
+        <SavedPostsModal
+          savedPosts={user.savedPosts}
+          onClose={() => setShowSavedPosts(false)}
+        />
+      )}
+
       {toastMessage && (
         <Toast message={toastMessage} type={toastType} onClose={() => setToastMessage('')} />
       )}
 
-      {showSavedPosts && user && (
-        savingPostsLoading ? (
-          <LoadingSpinner />  
-        ) : (
-          <section className="news-section">
-            {savedPosts.length > 0 ? (
-              savedPosts.map((article, index) => (
-                <NewsCard key={index} article={article} user={user} setUser={setUser} />
-              ))
-            ) : (
-              <NoSavedPosts />
-            )}
-          </section>
-        )
-      )}
-
-
-      {!showSavedPosts && (
-        <InfiniteScroll
-          dataLength={news.length}
-          next={fetchNextPage}
-          hasMore={hasMore}
-          loader={page > 1 ? <LoadingSpinner /> : null}
-        >
-          <section className="news-section">
-            {loading && page === 1 ? (
-              <LoadingSpinner />
-            ) : noResults ? (
-              <NoResults />
-            ) : (
-              news.map((article, index) => (
-                <NewsCard key={index} article={article} user={user} setUser={setUser} />
-                ))
-            )}
-          </section>
-        </InfiniteScroll>
-      )}
-
+      <InfiniteScroll
+        dataLength={news.length}
+        next={fetchNextPage}
+        hasMore={hasMore}
+        loader={page > 1 ? <LoadingSpinner /> : null}
+      >
+        <section className="news-section">
+          {loading && page === 1 ? (
+            <LoadingSpinner />
+          ) : noResults ? (
+            <NoResults />
+          ) : (
+            news.map((article, index) => (
+              <NewsCard key={index} article={article} user={user} />
+            ))
+          )}
+        </section>
+      </InfiniteScroll>
     </motion.div>
   );
 }

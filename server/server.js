@@ -1,27 +1,30 @@
-// server.js
 const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
 const app = express();
 
-// Enable CORS for frontend
-app.use(cors({
-    origin: 'http://localhost:3000',
-    methods: ['GET', 'POST'],
-}));
+app.use(cors({ origin: 'http://localhost:3000', methods: ['GET', 'POST'] }));
+app.use(express.json());
 
-app.use(express.json()); // Enable JSON body parsing
-
-// NewsAPI endpoint and API key
+// News API setup
 const NEWS_API_URL = 'https://newsapi.org/v2/everything';
-const API_KEY = '70e28aab2c6a44d490e457f66bb02d7e'; // Your NewsAPI key
+const API_KEY = '70e28aab2c6a44d490e457f66bb02d7e';
 
 // In-memory storage
-let users = [];
-let posts = []; // Only stores posts after they receive like/dislike
+let users = [
+    {
+        id: 234567,
+        name: 'Madhushalini',
+        email: 'madhushalinikotti@gmail.com',
+        likedPosts: [],
+        dislikedPosts: [],
+        savedPosts: []
+    }
+];
 
-// -----------------------
-// Helper to create 6-digit ID
+let posts = [];
+
+// Helper to create 6-digit unique ID
 const generateUniqueId = () => {
     let id;
     do {
@@ -29,9 +32,6 @@ const generateUniqueId = () => {
     } while (users.find(user => user.id === id));
     return id;
 };
-
-// -----------------------
-// ROUTES
 
 // Fetch News
 app.get('/api/news', async (req, res) => {
@@ -49,7 +49,7 @@ app.get('/api/news', async (req, res) => {
             },
         });
 
-        const articlesWithLikes = response.data.articles.map(article => {
+        const articlesWithMetrics = response.data.articles.map(article => {
             const id = Buffer.from(article.url).toString('base64');
             const existingPost = posts.find(p => p.id === id);
 
@@ -57,11 +57,12 @@ app.get('/api/news', async (req, res) => {
                 ...article,
                 id,
                 likes: existingPost?.likes || 0,
-                dislikes: existingPost?.dislikes || 0
+                dislikes: existingPost?.dislikes || 0,
+                saves: existingPost?.saves || 0 // ✅ Save count
             };
         });
 
-        res.json(articlesWithLikes);
+        res.json(articlesWithMetrics);
     } catch (error) {
         console.error('Error fetching news:', error.response?.data || error.message);
         res.status(500).json({ message: 'Error fetching news data' });
@@ -71,32 +72,27 @@ app.get('/api/news', async (req, res) => {
 // Like post
 app.post('/api/like', (req, res) => {
     const { userId, postId } = req.body;
-
     const user = users.find(u => u.id === parseInt(userId));
     if (!user) return res.status(404).json({ success: false, message: 'User not found' });
 
     let post = posts.find(p => p.id === postId);
     if (!post) {
-        // First time someone liked, create it
-        post = { id: postId, likes: 0, dislikes: 0 };
+        post = { id: postId, likes: 0, dislikes: 0, saves: 0 };
         posts.push(post);
     }
 
     if (user.likedPosts.includes(postId)) {
-        // Already liked → unlike
         user.likedPosts = user.likedPosts.filter(id => id !== postId);
         post.likes -= 1;
     } else {
-        // New like
         user.likedPosts.push(postId);
         post.likes += 1;
 
-        // If user had disliked before, remove dislike
         if (user.dislikedPosts.includes(postId)) {
             user.dislikedPosts = user.dislikedPosts.filter(id => id !== postId);
             post.dislikes -= 1;
         }
-    }
+    } 
 
     res.json({ success: true, post });
 });
@@ -104,27 +100,22 @@ app.post('/api/like', (req, res) => {
 // Dislike post
 app.post('/api/dislike', (req, res) => {
     const { userId, postId } = req.body;
-
     const user = users.find(u => u.id === parseInt(userId));
     if (!user) return res.status(404).json({ success: false, message: 'User not found' });
 
     let post = posts.find(p => p.id === postId);
     if (!post) {
-        // First time someone disliked, create it
-        post = { id: postId, likes: 0, dislikes: 0 };
+        post = { id: postId, likes: 0, dislikes: 0, saves: 0 };
         posts.push(post);
     }
 
     if (user.dislikedPosts.includes(postId)) {
-        // Already disliked → undo dislike
         user.dislikedPosts = user.dislikedPosts.filter(id => id !== postId);
         post.dislikes -= 1;
     } else {
-        // New dislike
         user.dislikedPosts.push(postId);
         post.dislikes += 1;
 
-        // If user had liked before, remove like
         if (user.likedPosts.includes(postId)) {
             user.likedPosts = user.likedPosts.filter(id => id !== postId);
             post.likes -= 1;
@@ -134,10 +125,59 @@ app.post('/api/dislike', (req, res) => {
     res.json({ success: true, post });
 });
 
+// Save or Unsave post
+app.post('/api/save', (req, res) => {
+    const { userId, postId, articleData } = req.body;
+    const user = users.find(u => u.id === parseInt(userId));
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+    let post = posts.find(p => p.id === postId);
+    if (!post) {
+        // First time saving this post in backend "posts" array
+        post = { id: postId, likes: 0, dislikes: 0, saves: 0 };
+        posts.push(post);
+    }
+
+    const alreadySaved = user.savedPosts.find(p => p.id === postId);
+
+    if (alreadySaved) {
+        // Unsave it
+        user.savedPosts = user.savedPosts.filter(p => p.id !== postId);
+        post.saves -= 1;
+        res.json({ success: true, saved: false, saves: post.saves });
+    } else {
+        // Save the full article data
+        const postToSave = {
+            id: postId,
+            title: articleData.title,
+            description: articleData.description,
+            url: articleData.url,
+            urlToImage: articleData.urlToImage,
+            likes: post.likes,
+            dislikes: post.dislikes,
+            saves: post.saves 
+        };
+        user.savedPosts.push(postToSave);
+        post.saves += 1;
+        res.json({ success: true, saved: true, saves: post.saves });
+        console.log(user);
+    }
+});
+
+
+// Get full saved posts
+app.get('/api/getsavedposts', (req, res) => {
+    const { userId } = req.query;
+
+    const user = users.find(u => u.id === parseInt(userId));
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+    res.json({ success: true, savedPosts: user.savedPosts });
+});
+
 // Signup
 app.post('/api/signup', (req, res) => {
     const { name, email } = req.body;
-
     if (!name || !email) {
         return res.status(400).json({ success: false, message: 'Name and email are required' });
     }
@@ -165,19 +205,25 @@ app.post('/api/signup', (req, res) => {
 // Login
 app.post('/api/login', (req, res) => {
     const { email } = req.body;
-
     const user = users.find(u => u.email === email);
     if (user) {
-        res.json({ success: true, user });
+        const safeUser = {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            likedPosts: user.likedPosts,
+            dislikedPosts: user.dislikedPosts,
+            savedPosts: user.savedPosts
+        };
+        res.json({ success: true, user: safeUser });
     } else {
-        res.status(400).json({ success: false, message: 'Email not found' });
+        res.status(400).json({ success: false, message: 'Email not found, Please Sign up' });
     }
 });
 
 // Get user data
 app.get('/api/userdata', (req, res) => {
     const { userId } = req.query;
-
     const user = users.find(u => u.id === parseInt(userId));
     if (!user) return res.status(404).json({ success: false, message: 'User not found' });
 

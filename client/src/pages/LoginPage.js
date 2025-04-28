@@ -2,11 +2,12 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { motion } from 'framer-motion';
-import './AuthPage.css'; // We'll use one file for Login and Signup styles
+import './AuthPage.css'; // Shared CSS
 
 function LoginPage({ onLoginSuccess }) {
     const [email, setEmail] = useState('');
     const [error, setError] = useState('');
+    const [successMessage, setSuccessMessage] = useState(''); // ✅ New
 
     const handleLogin = async (e) => {
         e.preventDefault();
@@ -14,14 +15,20 @@ function LoginPage({ onLoginSuccess }) {
             const response = await axios.post('http://localhost:5000/api/login', { email });
             if (response.data.success) {
                 const user = response.data.user;
-                localStorage.setItem('news-explorer-user', JSON.stringify(user)); // Save
-                onLoginSuccess(user); // Update parent state
+                localStorage.setItem('news-explorer-user', JSON.stringify(user));
+                onLoginSuccess(user);
+                setSuccessMessage('Login successful! 🎉');
             } else {
                 setError(response.data.message || 'Login failed. Try again.');
             }
         } catch (err) {
             console.error('Login error:', err);
-            setError('Server error during login.');
+            if (err.response) {
+                const backendMessage = err.response.data?.message || 'Login failed.';
+                setError(backendMessage);
+            } else {
+                setError('Server error. Please try again later.');
+            }
         }
     };
 
@@ -33,6 +40,9 @@ function LoginPage({ onLoginSuccess }) {
             transition={{ duration: 0.5 }}
         >
             <h2>Login</h2>
+
+            {successMessage && <p className="success-text">{successMessage}</p>} {/* ✅ Success message */}
+
             <form onSubmit={handleLogin} className="auth-form">
                 <input
                     type="email"

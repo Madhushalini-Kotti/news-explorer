@@ -15,17 +15,18 @@ function SignupPage({ onSignupSuccess }) {
             const response = await axios.post('http://localhost:5000/api/signup', { email, name });
             if (response.data.success) {
                 const user = response.data.user;
-                localStorage.setItem('news-explorer-user', JSON.stringify(user)); // Save
-                onSignupSuccess(user); // Update parent state
+                localStorage.setItem('news-explorer-user', JSON.stringify(user));
+                onSignupSuccess(user);
             } else {
                 setError(response.data.message || 'Signup failed. Try again.');
             }
         } catch (err) {
             console.error('Signup error:', err);
-            if (err.response && err.response.data && err.response.data.message) {
-                setError(err.response.data.message);
+            if (err.response) {
+                const backendMessage = err.response.data?.message || 'Signup failed.';
+                setError(backendMessage);
             } else {
-                setError('Server error during signup.');
+                setError('Server error. Please try again later.');
             }
         }
     };

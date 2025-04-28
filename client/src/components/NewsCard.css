@@ -64,6 +64,10 @@
     font-weight: bold;
 }
 
+.action-button.saved {
+    color: red;
+}
+
 .read-more {
     font-size: 14px;
     font-weight: bold;
